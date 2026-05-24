@@ -10,12 +10,16 @@ const clearBtn = document.getElementById("clearBtn");
 const transcriptArea = document.getElementById("transcript");
 const statusBox = document.getElementById("status");
 
+const DUPLICATE_WINDOW_MS = 4000;
+const RESTART_DELAY_MS = 350;
+
 let recognition;
-let isListening = false;
+let keepListening = false;
+let isRecognitionActive = false;
+let restartTimer;
 let finalText =
   localStorage.getItem("audioTexto_transcripcion") || "";
-
-let processedFinalIndexes = new Set();
+let recentFinals = [];
 
 transcriptArea.value = finalText;
 
@@ -30,28 +34,93 @@ function saveText() {
   );
 }
 
-function startRecognition() {
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
 
-  if (!recognition || isListening) return;
+function updateButtons() {
+  startBtn.disabled = keepListening;
+  stopBtn.disabled = !keepListening;
+}
 
-  processedFinalIndexes = new Set();
+function wasRecentlyAdded(text) {
+  const now = Date.now();
+  const normalizedText = normalizeText(text);
 
-  try {
-    isListening = true;
-    recognition.start();
-  } catch (error) {
-    console.log("Ya iniciado.");
+  recentFinals = recentFinals.filter(
+    item => now - item.time < DUPLICATE_WINDOW_MS
+  );
+
+  return recentFinals.some(
+    item => item.text === normalizedText
+  );
+}
+
+function rememberFinal(text) {
+  recentFinals.push({
+    text: normalizeText(text),
+    time: Date.now()
+  });
+}
+
+function appendFinalText(text) {
+  const cleanText = text.trim();
+
+  if (!cleanText || wasRecentlyAdded(cleanText)) {
+    return;
   }
 
+  finalText += cleanText + " ";
+  rememberFinal(cleanText);
+}
+
+function scheduleRestart() {
+  clearTimeout(restartTimer);
+
+  restartTimer = setTimeout(() => {
+    if (!recognition || !keepListening || isRecognitionActive) {
+      return;
+    }
+
+    try {
+      recognition.start();
+    } catch (error) {
+      scheduleRestart();
+    }
+  }, RESTART_DELAY_MS);
+}
+
+function startRecognition() {
+  if (!recognition || keepListening) return;
+
+  keepListening = true;
+  updateButtons();
+  setStatus("Escuchando...");
+
+  try {
+    recognition.start();
+  } catch (error) {
+    scheduleRestart();
+  }
 }
 
 function stopRecognition() {
-
   if (!recognition) return;
 
-  isListening = false;
-  recognition.stop();
+  keepListening = false;
+  clearTimeout(restartTimer);
+  updateButtons();
 
+  if (isRecognitionActive) {
+    recognition.stop();
+  } else {
+    setStatus("Transcripcion detenida.");
+  }
 }
 
 if (!SpeechRecognition) {
@@ -60,7 +129,7 @@ if (!SpeechRecognition) {
   stopBtn.disabled = true;
 
   setStatus(
-    "Tu navegador no soporta reconocimiento de voz."
+    "Tu navegador no soporta reconocimiento de voz. Proba con Chrome."
   );
 
 } else {
@@ -72,16 +141,12 @@ if (!SpeechRecognition) {
   recognition.interimResults = true;
 
   recognition.onstart = () => {
-
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-
+    isRecognitionActive = true;
+    updateButtons();
     setStatus("Escuchando...");
-
   };
 
   recognition.onresult = (event) => {
-
     let interimText = "";
 
     for (
@@ -89,78 +154,55 @@ if (!SpeechRecognition) {
       i < event.results.length;
       i++
     ) {
-
       const text =
         event.results[i][0].transcript.trim();
 
       if (event.results[i].isFinal) {
-
-        if (!processedFinalIndexes.has(i)) {
-
-          finalText += text + " ";
-          processedFinalIndexes.add(i);
-
-        }
-
+        appendFinalText(text);
       } else {
-
         interimText += text + " ";
-
       }
-
     }
 
     transcriptArea.value =
       finalText + interimText;
 
     saveText();
-
   };
 
   recognition.onerror = (event) => {
+    isRecognitionActive = false;
 
-    setStatus(
-      "Error: " + event.error
-    );
+    if (
+      event.error === "not-allowed" ||
+      event.error === "service-not-allowed"
+    ) {
+      keepListening = false;
+      updateButtons();
+      setStatus("Permiso de microfono denegado.");
+      return;
+    }
 
+    if (keepListening) {
+      setStatus("Pausa detectada. Retomando...");
+      scheduleRestart();
+      return;
+    }
+
+    setStatus("Error: " + event.error);
   };
 
   recognition.onend = () => {
+    isRecognitionActive = false;
+    updateButtons();
 
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-
-    if (isListening) {
-
-      setStatus(
-        "Pausa detectada. Retomando..."
-      );
-
-      setTimeout(() => {
-
-        try {
-
-          processedFinalIndexes = new Set();
-          recognition.start();
-
-        } catch (error) {
-
-          console.log(
-            "No se pudo reiniciar."
-          );
-
-        }
-
-      }, 500);
-
-    } else {
-
-      setStatus(
-        "Transcripción detenida."
-      );
-
+    if (keepListening) {
+      setStatus("Pausa detectada. Retomando...");
+      scheduleRestart();
+      return;
     }
 
+    setStatus("Transcripcion detenida.");
   };
 
 }
@@ -178,28 +220,23 @@ stopBtn.addEventListener(
 transcriptArea.addEventListener(
   "input",
   () => {
-
     finalText = transcriptArea.value;
     saveText();
-
   }
 );
 
 copyBtn.addEventListener(
   "click",
   async () => {
-
     const text =
       transcriptArea.value.trim();
 
     if (!text) {
-
       setStatus(
         "No hay texto para copiar."
       );
 
       return;
-
     }
 
     await navigator.clipboard.writeText(
@@ -207,25 +244,21 @@ copyBtn.addEventListener(
     );
 
     setStatus("Texto copiado.");
-
   }
 );
 
 downloadBtn.addEventListener(
   "click",
   () => {
-
     const text =
       transcriptArea.value.trim();
 
     if (!text) {
-
       setStatus(
         "No hay texto para descargar."
       );
 
       return;
-
     }
 
     const file = new Blob(
@@ -253,16 +286,15 @@ downloadBtn.addEventListener(
     setStatus(
       "Archivo descargado."
     );
-
   }
 );
 
 clearBtn.addEventListener(
   "click",
   () => {
-
     transcriptArea.value = "";
     finalText = "";
+    recentFinals = [];
 
     localStorage.removeItem(
       "audioTexto_transcripcion"
@@ -271,12 +303,9 @@ clearBtn.addEventListener(
     setStatus(
       "Texto limpiado."
     );
-
   }
 );
 
 if ("serviceWorker" in navigator) {
-
   navigator.serviceWorker.register("sw.js");
-
 }
