@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AudioTexto</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#101827">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #101827, #172554);
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 7vw, 3.5rem);
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #cbd5e1;
+    }
+
+    .status {
+      background: rgba(30, 41, 59, 0.9);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .controls,
+    .tools {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .controls {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .tools {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .primary { background: #22c55e; color: #052e16; }
+    .danger { background: #ef4444; color: white; }
+    .secondary { background: #38bdf8; color: #082f49; }
+    .dark { background: #334155; color: white; }
+
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #f8fafc;
+      margin-bottom: 16px;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 12px; }
+      .controls, .tools { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <h1>AudioTexto</h1>
+      <p>Transcribi tu voz gratis desde el navegador</p>
+    </header>
+
+    <div class="status" id="status">
+      Presiona "Iniciar" y habla cerca del microfono.
+    </div>
+
+    <section class="controls">
+      <button class="primary" id="startBtn">Iniciar transcripcion</button>
+      <button class="danger" id="stopBtn" disabled>Detener</button>
+    </section>
+
+    <textarea id="transcript" placeholder="Aca aparecera la transcripcion..."></textarea>
+
+    <section class="tools">
+      <button class="secondary" id="copyBtn">Copiar</button>
+      <button class="dark" id="downloadBtn">Descargar TXT</button>
+      <button class="danger" id="clearBtn">Limpiar</button>
+    </section>
+
+    <p class="note">
+      Primera version: funciona mejor en Chrome.
+    </p>
+  </main>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const transcriptArea = document.getElementById("transcript");
+    const statusBox = document.getElementById("status");
+
+    let recognition;
+    let finalText = localStorage.getItem("audioTexto_transcripcion") || "";
+    transcriptArea.value = finalText;
+
+    function setStatus(message) {
+      statusBox.textContent = message;
+    }
+
+    function saveText() {
+      localStorage.setItem("audioTexto_transcripcion", transcriptArea.value);
+    }
+
+    if (!SpeechRecognition) {
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+      setStatus("Tu navegador no soporta reconocimiento de voz. Proba con Chrome.");
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = "es-AR";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        setStatus("Escuchando... habla ahora.");
+      };
+
+      recognition.onresult = (event) => {
+        let interimText = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+
+          if (event.results[i].isFinal) {
+            finalText += text.trim() + " ";
+          } else {
+            interimText += text;
+          }
+        }
+
+        transcriptArea.value = finalText + interimText;
+        saveText();
+      };
+
+      recognition.onerror = (event) => {
+        setStatus("Error: " + event.error + ". Revisa permisos del microfono.");
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      };
+
+      recognition.onend = () => {
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        setStatus("Transcripcion detenida.");
+      };
+    }
+
+    startBtn.addEventListener("click", () => {
+      if (recognition) recognition.start();
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (recognition) recognition.stop();
+    });
+
+    transcriptArea.addEventListener("input", () => {
+      finalText = transcriptArea.value;
+      saveText();
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      const text = transcriptArea.value.trim();
+      if (!text) return setStatus("No hay texto para copiar.");
+
+      await navigator.clipboard.writeText(text);
+      setStatus("Texto copiado.");
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const text = transcriptArea.value.trim();
+      if (!text) return setStatus("No hay texto para descargar.");
+
+      const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "transcripcion.txt";
+      link.click();
+
+      URL.revokeObjectURL(url);
+      setStatus("Archivo descargado.");
+    });
+
+    clearBtn.addEventListener("click", () => {
+      transcriptArea.value = "";
+      finalText = "";
+      localStorage.removeItem("audioTexto_transcripcion");
+      setStatus("Texto limpiado.");
+    });
+  </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
+</body>
+</html>
