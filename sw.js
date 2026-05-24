@@ -1,11 +1,13 @@
-const CACHE_NAME = "audiotexto-v6";
+const CACHE_NAME = "audiotexto-v7";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./manifest.json",
   "./css/styles.css",
-  "./js/app.js"
+  "./js/app.js",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
 self.addEventListener("install", event => {
