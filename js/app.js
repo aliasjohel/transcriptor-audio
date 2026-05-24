@@ -43,6 +43,25 @@ function normalizeText(text) {
     .trim();
 }
 
+function getOnlyNewWords(previousText, newText) {
+  const previousWords = normalizeText(previousText).split(" ");
+  const newWords = newText.trim().split(" ");
+  const normalizedNewWords = normalizeText(newText).split(" ");
+
+  let maxOverlap = 0;
+
+  for (let i = 1; i <= normalizedNewWords.length; i++) {
+    const endPrevious = previousWords.slice(-i).join(" ");
+    const startNew = normalizedNewWords.slice(0, i).join(" ");
+
+    if (endPrevious === startNew) {
+      maxOverlap = i;
+    }
+  }
+
+  return newWords.slice(maxOverlap).join(" ");
+}
+
 function updateButtons() {
   startBtn.disabled = keepListening;
   stopBtn.disabled = !keepListening;
@@ -75,7 +94,13 @@ function appendFinalText(text) {
     return;
   }
 
-  finalText += cleanText + " ";
+  const onlyNewText = getOnlyNewWords(finalText, cleanText);
+
+  if (!onlyNewText.trim()) {
+    return;
+  }
+
+  finalText += onlyNewText.trim() + " ";
   rememberFinal(cleanText);
 }
 
