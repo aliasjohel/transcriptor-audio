@@ -10,7 +10,7 @@ const clearBtn = document.getElementById("clearBtn");
 const transcriptArea = document.getElementById("transcript");
 const statusBox = document.getElementById("status");
 
-const DUPLICATE_WINDOW_MS = 4000;
+const DUPLICATE_WINDOW_MS = 8000;
 const RESTART_DELAY_MS = 350;
 
 let recognition;
@@ -139,6 +139,7 @@ if (!SpeechRecognition) {
   recognition.lang = "es-AR";
   recognition.continuous = true;
   recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
 
   recognition.onstart = () => {
     isRecognitionActive = true;
