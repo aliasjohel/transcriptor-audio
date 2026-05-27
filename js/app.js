@@ -17,6 +17,10 @@ const transcriptArea = document.getElementById("transcript");
 const statusBox = document.getElementById("status");
 const languageSelect =
   document.getElementById("languageSelect");
+const audioFile =
+  document.getElementById("audioFile");
+const audioPlayer =
+  document.getElementById("audioPlayer");
 
 // -------------------- Configuracion --------------------
 
@@ -277,6 +281,25 @@ languageSelect.addEventListener(
 
     }
 
+  }
+);
+
+audioFile.addEventListener(
+  "change",
+  () => {
+    const file = audioFile.files[0];
+
+    if (!file) return;
+
+    const audioUrl =
+      URL.createObjectURL(file);
+
+    audioPlayer.src = audioUrl;
+    audioPlayer.hidden = false;
+
+    setStatus(
+      "Audio cargado. Próximo paso: conectar transcripción automática con IA."
+    );
   }
 );
 

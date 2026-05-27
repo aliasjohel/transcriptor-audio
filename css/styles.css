@@ -69,6 +69,29 @@ header p {
   color: #0f172a;
 }
 
+.audio-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.audio-upload label {
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.audio-upload input {
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.audio-upload audio {
+  width: 100%;
+}
+
 .controls,
 .tools {
   display: grid;
