@@ -1,4 +1,4 @@
-const CACHE_NAME = "audiotexto-v10";
+const CACHE_NAME = "audiotexto-v11";
 
 const FILES_TO_CACHE = [
   "./",

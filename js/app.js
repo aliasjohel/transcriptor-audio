@@ -11,6 +11,8 @@ const stopBtn = document.getElementById("stopBtn");
 const copyBtn = document.getElementById("copyBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const clearBtn = document.getElementById("clearBtn");
+const whatsappBtn =
+  document.getElementById("whatsappBtn");
 const transcriptArea = document.getElementById("transcript");
 const statusBox = document.getElementById("status");
 const languageSelect =
@@ -346,6 +348,30 @@ downloadBtn.addEventListener(
 
     setStatus(
       "Archivo descargado."
+    );
+  }
+);
+
+whatsappBtn.addEventListener(
+  "click",
+  () => {
+    const text =
+      transcriptArea.value.trim();
+
+    if (!text) {
+      setStatus(
+        "No hay texto para compartir."
+      );
+
+      return;
+    }
+
+    const whatsappUrl =
+      `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    window.open(
+      whatsappUrl,
+      "_blank"
     );
   }
 );
