@@ -25,7 +25,7 @@ const audioPlayer =
 // -------------------- Configuracion --------------------
 
 const DUPLICATE_WINDOW_MS = 8000;
-const RESTART_DELAY_MS = 350;
+const RESTART_DELAY_MS = 100;
 
 // -------------------- Variables globales --------------------
 
