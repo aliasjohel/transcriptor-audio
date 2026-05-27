@@ -1,6 +1,10 @@
+// -------------------- Reconocimiento de voz: compatibilidad --------------------
+
 const SpeechRecognition =
   window.SpeechRecognition ||
   window.webkitSpeechRecognition;
+
+// -------------------- Elementos del DOM --------------------
 
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
@@ -9,9 +13,15 @@ const downloadBtn = document.getElementById("downloadBtn");
 const clearBtn = document.getElementById("clearBtn");
 const transcriptArea = document.getElementById("transcript");
 const statusBox = document.getElementById("status");
+const languageSelect =
+  document.getElementById("languageSelect");
+
+// -------------------- Configuracion --------------------
 
 const DUPLICATE_WINDOW_MS = 8000;
 const RESTART_DELAY_MS = 350;
+
+// -------------------- Variables globales --------------------
 
 let recognition;
 let keepListening = false;
@@ -22,6 +32,8 @@ let finalText =
 let recentFinals = [];
 
 transcriptArea.value = finalText;
+
+// -------------------- Funciones utilitarias --------------------
 
 function setStatus(message) {
   statusBox.textContent = message;
@@ -104,6 +116,8 @@ function appendFinalText(text) {
   rememberFinal(cleanText);
 }
 
+// -------------------- Reconocimiento de voz --------------------
+
 function scheduleRestart() {
   clearTimeout(restartTimer);
 
@@ -161,7 +175,8 @@ if (!SpeechRecognition) {
 
   recognition = new SpeechRecognition();
 
-  recognition.lang = "es-AR";
+  recognition.lang =
+  languageSelect.value;
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
@@ -233,6 +248,8 @@ if (!SpeechRecognition) {
 
 }
 
+// -------------------- Eventos --------------------
+
 startBtn.addEventListener(
   "click",
   startRecognition
@@ -241,6 +258,24 @@ startBtn.addEventListener(
 stopBtn.addEventListener(
   "click",
   stopRecognition
+);
+
+languageSelect.addEventListener(
+  "change",
+  () => {
+
+    if (recognition) {
+
+      recognition.lang =
+        languageSelect.value;
+
+      setStatus(
+        "Idioma cambiado."
+      );
+
+    }
+
+  }
 );
 
 transcriptArea.addEventListener(
@@ -331,6 +366,8 @@ clearBtn.addEventListener(
     );
   }
 );
+
+// -------------------- Service worker --------------------
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");

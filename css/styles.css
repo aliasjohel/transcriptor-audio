@@ -46,6 +46,29 @@ header p {
   text-align: center;
 }
 
+.language-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.language-box label {
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.language-box select {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  outline: none;
+  background: #f8fafc;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
 .controls,
 .tools {
   display: grid;
