@@ -1,4 +1,4 @@
-const CACHE_NAME = "audiotexto-v9";
+const CACHE_NAME = "audiotexto-v10";
 
 const FILES_TO_CACHE = [
   "./",
@@ -11,6 +11,7 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener("install", event => {
+  self.skipWaiting();
 
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -18,9 +19,6 @@ self.addEventListener("install", event => {
         cache.addAll(FILES_TO_CACHE)
       )
   );
-
-  self.skipWaiting();
-
 });
 
 self.addEventListener("activate", event => {
@@ -59,3 +57,17 @@ self.addEventListener("fetch", event => {
   );
 
 });
+ 
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames
+          .filter(cacheName => cacheName !== CACHE_NAME)
+          .map(cacheName => caches.delete(cacheName))
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+
