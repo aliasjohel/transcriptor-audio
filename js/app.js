@@ -377,6 +377,30 @@ downloadBtn.addEventListener(
   }
 );
 
+whatsappBtn.addEventListener(
+  "click",
+  () => {
+    const text =
+      transcriptArea.value.trim();
+
+    if (!text) {
+      setStatus(
+        "No hay texto para compartir."
+      );
+
+      return;
+    }
+
+    const whatsappUrl =
+      `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    window.open(
+      whatsappUrl,
+      "_blank"
+    );
+  }
+);
+
 clearBtn.addEventListener(
   "click",
   () => {
