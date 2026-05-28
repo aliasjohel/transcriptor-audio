@@ -387,28 +387,32 @@ stopBtn.addEventListener(
   stopRecognition
 );
 
-clearHistoryBtn.addEventListener(
-  "click",
-  clearHistory
-);
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener(
+    "click",
+    clearHistory
+  );
+}
 
-toggleHistoryBtn.addEventListener(
-  "click",
-  () => {
+if (toggleHistoryBtn) {
+  toggleHistoryBtn.addEventListener(
+    "click",
+    () => {
 
-    const isHidden =
-      historyList.hidden;
+      const isHidden =
+        historyList.hidden;
 
-    historyList.hidden =
-      !isHidden;
+      historyList.hidden =
+        !isHidden;
 
-    toggleHistoryBtn.textContent =
-      isHidden
-        ? "Ocultar"
-        : "Mostrar";
+      toggleHistoryBtn.textContent =
+        isHidden
+          ? "Ocultar"
+          : "Mostrar";
 
-  }
-);
+    }
+  );
+}
 
 languageSelect.addEventListener(
   "change",

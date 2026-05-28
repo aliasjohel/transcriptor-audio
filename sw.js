@@ -1,11 +1,11 @@
-const CACHE_NAME = "audiotexto-v16";
+const CACHE_NAME = "audiotexto-v17";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./css/styles.css",
-  "./js/app.js",
+  "./css/styles.css?v=17",
+  "./js/app.js?v=17",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
@@ -19,23 +19,6 @@ self.addEventListener("install", event => {
         cache.addAll(FILES_TO_CACHE)
       )
   );
-});
-
-self.addEventListener("activate", event => {
-
-  event.waitUntil(
-    caches.keys()
-      .then(cacheNames =>
-        Promise.all(
-          cacheNames
-            .filter(cacheName => cacheName !== CACHE_NAME)
-            .map(cacheName => caches.delete(cacheName))
-        )
-      )
-  );
-
-  self.clients.claim();
-
 });
 
 self.addEventListener("fetch", event => {
@@ -69,5 +52,4 @@ self.addEventListener("activate", event => {
     }).then(() => self.clients.claim())
   );
 });
-
 
