@@ -17,6 +17,19 @@ const transcriptArea = document.getElementById("transcript");
 const statusBox = document.getElementById("status");
 const languageSelect =
   document.getElementById("languageSelect");
+const clearHistoryBtn =
+  document.getElementById(
+    "clearHistoryBtn"
+  );
+const toggleHistoryBtn =
+  document.getElementById(
+    "toggleHistoryBtn"
+  );
+
+const historyList =
+  document.getElementById(
+    "historyList"
+  );
 const audioFile =
   document.getElementById("audioFile");
 const audioPlayer =
@@ -36,6 +49,7 @@ let restartTimer;
 let finalText =
   localStorage.getItem("audioTexto_transcripcion") || "";
 let recentFinals = [];
+let history = loadHistory();
 
 transcriptArea.value = finalText;
 
@@ -50,6 +64,22 @@ function saveText() {
     "audioTexto_transcripcion",
     transcriptArea.value
   );
+}
+
+function loadHistory() {
+  try {
+    const savedHistory = JSON.parse(
+      localStorage.getItem(
+        "audioTexto_history"
+      )
+    );
+
+    return Array.isArray(savedHistory)
+      ? savedHistory
+      : [];
+  } catch (error) {
+    return [];
+  }
 }
 
 function normalizeText(text) {
@@ -122,6 +152,95 @@ function appendFinalText(text) {
   rememberFinal(cleanText);
 }
 
+function saveHistoryItem() {
+  const text =
+    transcriptArea.value.trim();
+
+  if (!text) return;
+
+  const item = {
+    id: Date.now(),
+    text,
+    date:
+      new Date().toLocaleString()
+  };
+
+  history.unshift(item);
+
+  history = history.slice(0, 20);
+
+  localStorage.setItem(
+    "audioTexto_history",
+    JSON.stringify(history)
+  );
+
+  renderHistory();
+}
+
+function renderHistory() {
+  historyList.innerHTML = "";
+
+  history.forEach(item => {
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "history-item";
+
+    const date =
+      document.createElement("div");
+
+    date.className =
+      "history-date";
+
+    date.textContent = item.date;
+
+    const preview =
+      document.createElement("div");
+
+    preview.className =
+      "history-preview";
+
+    preview.textContent =
+      item.text.slice(0, 120) + "...";
+
+    div.append(date, preview);
+
+    div.addEventListener(
+      "click",
+      () => {
+        transcriptArea.value =
+          item.text;
+
+        finalText =
+          item.text;
+
+        saveText();
+
+        setStatus(
+          "Historial cargado."
+        );
+      }
+    );
+
+    historyList.appendChild(div);
+  });
+}
+
+function clearHistory() {
+  history = [];
+
+  localStorage.removeItem(
+    "audioTexto_history"
+  );
+
+  renderHistory();
+
+  setStatus(
+    "Historial limpiado."
+  );
+}
+
 // -------------------- Reconocimiento de voz --------------------
 
 function scheduleRestart() {
@@ -164,6 +283,7 @@ function stopRecognition() {
   if (isRecognitionActive) {
     recognition.stop();
   } else {
+    saveHistoryItem();
     setStatus("Transcripcion detenida.");
   }
 }
@@ -249,6 +369,7 @@ if (!SpeechRecognition) {
       return;
     }
 
+    saveHistoryItem();
     setStatus("Transcripcion detenida.");
   };
 
@@ -264,6 +385,29 @@ startBtn.addEventListener(
 stopBtn.addEventListener(
   "click",
   stopRecognition
+);
+
+clearHistoryBtn.addEventListener(
+  "click",
+  clearHistory
+);
+
+toggleHistoryBtn.addEventListener(
+  "click",
+  () => {
+
+    const isHidden =
+      historyList.hidden;
+
+    historyList.hidden =
+      !isHidden;
+
+    toggleHistoryBtn.textContent =
+      isHidden
+        ? "Ocultar"
+        : "Mostrar";
+
+  }
 );
 
 languageSelect.addEventListener(
@@ -417,6 +561,8 @@ clearBtn.addEventListener(
     );
   }
 );
+
+renderHistory();
 
 // -------------------- Service worker --------------------
 
